@@ -70,6 +70,7 @@ public final class OreHighlight {
 
     public static void init() {
 
+        // Проверяем ближайшие руды раз в 20 тиков.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             if (!VisionModClient.isOreEnabled()
@@ -77,13 +78,17 @@ public final class OreHighlight {
                     || client.player == null) {
 
                 visibleOres.clear();
+                ticks = 0;
                 return;
             }
 
-            if (++ticks % 20 != 0) {
+            ticks++;
+
+            if (ticks < 20) {
                 return;
             }
 
+            ticks = 0;
             visibleOres.clear();
 
             BlockPos center =
@@ -92,14 +97,16 @@ public final class OreHighlight {
             BlockPos.MutableBlockPos cursor =
                 new BlockPos.MutableBlockPos();
 
+            scan:
             for (int x = -RADIUS; x <= RADIUS; x++) {
                 for (int y = -VERTICAL_RADIUS;
                          y <= VERTICAL_RADIUS; y++) {
+
                     for (int z = -RADIUS;
                          z <= RADIUS; z++) {
 
                         if (visibleOres.size() >= MAX_ORES) {
-                            return;
+                            break scan;
                         }
 
                         cursor.set(
@@ -111,12 +118,12 @@ public final class OreHighlight {
                         BlockState state =
                             client.level.getBlockState(cursor);
 
-                        Block block = state.getBlock();
-
-                        if (!ORES.contains(block)) {
+                        if (!ORES.contains(state.getBlock())) {
                             continue;
                         }
 
+                        // Подсвечиваем только руды,
+                        // имеющие хотя бы одну открытую сторону.
                         boolean exposed = false;
 
                         for (Direction side : Direction.values()) {
@@ -124,34 +131,37 @@ public final class OreHighlight {
                             BlockPos neighbor =
                                 cursor.relative(side);
 
-                            if (!client.level
-                                    .getBlockState(neighbor)
-                                    .isSolidRender()) {
+                            BlockState neighborState =
+                                client.level.getBlockState(neighbor);
+
+                            if (!neighborState.isSolidRender()) {
                                 exposed = true;
                                 break;
                             }
                         }
 
                         if (exposed) {
-                            visibleOres.add(
-                                cursor.immutable()
-                            );
+                            visibleOres.add(cursor.immutable());
                         }
                     }
                 }
             }
         });
 
-        WorldRenderEvents.BEFORE_ENTITIES.register(context -> {
+        // ВАЖНО:
+        // BEFORE_DEBUG_RENDER вместо BEFORE_ENTITIES.
+        // Линии добавляются после большинства
+        // непрозрачных объектов и эффектов блоков.
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
 
             if (!VisionModClient.isOreEnabled()
                     || visibleOres.isEmpty()
-                    || context.consumers() == null) {
+                    || context.consumers() == null
+                    || context.matrices() == null) {
                 return;
             }
 
-            Minecraft client =
-                Minecraft.getInstance();
+            Minecraft client = Minecraft.getInstance();
 
             if (client.level == null) {
                 return;
@@ -159,7 +169,8 @@ public final class OreHighlight {
 
             Vec3 camera =
                 client.gameRenderer
-                    .getMainCamera().position();
+                    .getMainCamera()
+                    .position();
 
             VertexConsumer lines =
                 context.consumers()
@@ -167,22 +178,23 @@ public final class OreHighlight {
 
             for (BlockPos pos : visibleOres) {
 
-                Block block =
-                    client.level
-                        .getBlockState(pos)
-                        .getBlock();
+                Block block = client.level
+                    .getBlockState(pos)
+                    .getBlock();
 
                 if (!ORES.contains(block)) {
                     continue;
                 }
 
-                // Live color from the menu.
-                int argb = OreColors.colorFor(block);
+                // Цвет из настроек Vision Mod.
+                int color = OreColors.colorFor(block);
 
+                // Координаты относительно камеры.
                 double x = pos.getX() - camera.x;
                 double y = pos.getY() - camera.y;
                 double z = pos.getZ() - camera.z;
 
+                // Тонкий контур немного внутри блока.
                 ShapeRenderer.renderShape(
                     context.matrices(),
                     lines,
@@ -190,8 +202,10 @@ public final class OreHighlight {
                         0.002, 0.002, 0.002,
                         0.998, 0.998, 0.998
                     ),
-                    x, y, z,
-                    argb,
+                    x,
+                    y,
+                    z,
+                    color,
                     2.0F
                 );
             }
