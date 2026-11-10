@@ -26,12 +26,12 @@ public final class CosmeticsScreen extends Screen {
         g.fill(x,y,x+258,y+224,0xEF101722);
         g.fill(x,y,x+258,y+2,CYAN);
         g.drawString(font,"VISION COSMETICS",x+12,y+13,TEXT);
-        g.drawString(font,"3D MODELS / LOCAL ONLY",x+12,y+35,MUTED);
+        g.drawString(font,"3D MODELS / CLOUD SYNC",x+12,y+35,MUTED);
         drawButton(g,x,y+55,"Head: " + VisionCosmetics.localHead);
         drawButton(g,x,y+87,"Back: " + VisionCosmetics.localBack);
         drawButton(g,x,y+119,"Other players: " + (VisionModClient.showOtherCosmetics?"ON":"OFF"));
         drawButton(g,x,y+151,"OPEN COSMETICS FOLDER");
-        g.drawCenteredString(font,"Local JSON: open folder / no sync yet",x+129,y+180,MUTED);
+        g.drawCenteredString(font,"SYNC: " + VisionCosmetics.syncStatus,x+129,y+180,MUTED);
         drawButton(g,x,y+190,"BACK");
     }
 
@@ -44,8 +44,8 @@ public final class CosmeticsScreen extends Screen {
         if(click.button()!=GLFW.GLFW_MOUSE_BUTTON_LEFT) return super.mouseClicked(click,doubled);
         double mx=click.x(),my=click.y();int x=x(),y=y();
         if(mx<x+12 || mx>=x+246) return super.mouseClicked(click,doubled);
-        if(my>=y+55 && my<y+80) {VisionCosmetics.localHead=next(VisionCosmetics.localIds("head"),VisionCosmetics.localHead);return true;}
-        if(my>=y+87 && my<y+112) {VisionCosmetics.localBack=next(VisionCosmetics.localIds("back"),VisionCosmetics.localBack);return true;}
+        if(my>=y+55 && my<y+80) {VisionCosmetics.localHead=next(VisionCosmetics.localIds("head"),VisionCosmetics.localHead);VisionCosmetics.selectionChanged();return true;}
+        if(my>=y+87 && my<y+112) {VisionCosmetics.localBack=next(VisionCosmetics.localIds("back"),VisionCosmetics.localBack);VisionCosmetics.selectionChanged();return true;}
         if(my>=y+119 && my<y+144) {VisionModClient.showOtherCosmetics=!VisionModClient.showOtherCosmetics;return true;}
         if(my>=y+151 && my<y+176) {
             if (!CosmeticsFolder.open() && minecraft.player != null) {
