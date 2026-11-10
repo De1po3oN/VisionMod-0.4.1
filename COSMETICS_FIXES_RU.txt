@@ -1,0 +1,13 @@
+Vision Mod 0.3.0 — test source, not validated JAR
+
+1. Built-in cosmetics now use separate entity texture assets:
+   src/main/resources/assets/visionmod/textures/cosmetics/head.png
+   src/main/resources/assets/visionmod/textures/cosmetics/back.png
+2. Backpack/wing geometry flipped toward negative local Z. Body yaw is used, not head yaw.
+3. ClientLevelParticlesMixin intercepts mining-progress particles, which bypass ParticleOptions filtering.
+4. User-provided PNG files are NOT yet loaded; custom local JSON cuboids remain available.
+5. Cloudflare KV read-only lookup is not a synchronization system. No account authentication,
+   file upload or publication is implemented; remote cosmetics cannot appear by selecting
+   something locally. Do not put an admin token in the mod.
+6. FreeLook and advanced player animations still require testing in-game; best long-term
+   integration is an avatar renderer feature layer attached to body model part.
